@@ -1,0 +1,9 @@
+[packages]
+pandas = "*"
+scikit-learn = "*"
+pydantic = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"
