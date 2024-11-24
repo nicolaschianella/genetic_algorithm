@@ -25,3 +25,14 @@ class InputConfig(BaseModel):
         description="Number of population to run the genetic algorithm",
         default=50
     )
+    train_fraction: float = Field(
+        description="Represents the desired train fraction to use for ML models - must be within 0 and 1 (both "
+                    "excluded)",
+        gt=0,
+        lt=1,
+        default=0.8
+    )
+    random_seed: int = Field(
+        description="Seed for reproducibility",
+        default=42
+    )

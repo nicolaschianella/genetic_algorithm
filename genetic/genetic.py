@@ -10,6 +10,7 @@
 import json
 import logging
 import pandas as pd
+import random
 
 from utils.defines import TARGET_ENCODER
 from utils.schemas import InputConfig
@@ -41,6 +42,9 @@ class Genetic:
         self.features = None
         # Target within the dataset
         self.target = None
+        # Train/validation datasets and associated targets
+        self.train_features, self.val_features = None, None
+        self.train_target, self.val_target = None, None
 
         # Load JSON and validate
         self.load_json(path_to_json=path_to_json)
@@ -49,6 +53,12 @@ class Genetic:
         self.load_dataset(path_to_dataset=path_to_dataset,
                           target=target,
                           remove_columns=remove_columns)
+
+        # Seed
+        self.rng = random.Random(self.json_config["random_seed"])
+
+        # Split train/validation
+        self.split_train_val()
 
 
     def load_json(self,
@@ -132,6 +142,33 @@ class Genetic:
                 msg += f", and removing columns: {remove_columns}"
 
             msg += f" - full exception: {e}"
+            logging.error(msg)
+            raise Exception(msg)
+
+
+    def split_train_val(self):
+        """
+        Splits randomly the whole dataset in training and validation sets, according to 'train_fraction' specified in
+        the config. Please note that it's taken fully randomly (meaning for time series data, it will introduce leak)
+
+        Returns:
+            None
+        """
+        try:
+            # Calculate number of train samples and generate train indexes and complementary validation indexes
+            nb_train_samples = int(self.features.shape[0] * self.json_config["train_fraction"])
+            train_indexes = self.rng.sample(range(self.features.shape[0]), nb_train_samples)
+            val_indexes = [i for i in range(self.features.shape[0]) if i not in train_indexes]
+
+            # Assign values for features and target
+            self.train_features, self.val_features = self.features.iloc[train_indexes], self.features.iloc[val_indexes]
+            self.train_target, self.val_target = self.target.iloc[train_indexes], self.target.iloc[val_indexes]
+
+            logging.info(f"Dataset split in {self.train_features.shape[0]} training samples, "
+                         f"{self.val_features.shape[0]} validation samples")
+
+        except Exception as e:
+            msg = f"An Exception occurred while splitting data in train/validation set - full exception: {e}"
             logging.error(msg)
             raise Exception(msg)
 
