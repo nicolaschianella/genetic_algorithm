@@ -32,6 +32,10 @@ class InputConfig(BaseModel):
         lt=1,
         default=0.8
     )
+    max_features: PositiveInt = Field(
+        description="Maximum number of features to use in ML models",
+        default=20
+    )
     random_seed: int = Field(
         description="Seed for reproducibility",
         default=42
