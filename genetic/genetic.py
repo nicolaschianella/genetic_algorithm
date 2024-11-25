@@ -45,6 +45,8 @@ class Genetic:
         # Train/validation datasets and associated targets
         self.train_features, self.val_features = None, None
         self.train_target, self.val_target = None, None
+        # Population binary indicators
+        self.current_population = []
 
         # Load JSON and validate
         self.load_json(path_to_json=path_to_json)
@@ -146,7 +148,7 @@ class Genetic:
             raise Exception(msg)
 
 
-    def split_train_val(self):
+    def split_train_val(self) -> None:
         """
         Splits randomly the whole dataset in training and validation sets, according to 'train_fraction' specified in
         the config. Please note that it's taken fully randomly (meaning for time series data, it will introduce leak)
@@ -173,5 +175,44 @@ class Genetic:
             raise Exception(msg)
 
 
+    def initialize_population(self) -> None:
+        """
+        Initializes the population with max_features features in each individual
+
+        Returns:
+            None
+        """
+        # Initial check
+        if self.json_config["max_features"] > self.train_features.shape[1]:
+            msg = (f"Provided 'max_features': {self.json_config['max_features']} exceeds total number of features "
+                   f"within the dataset: {self.train_features.shape[1]}, cannot proceed further")
+            logging.error(msg)
+            raise Exception(msg)
+
+        # Loop over nb_population, and each individual will randomly get max_features ones and
+        # (total_number_of_features - max_features) zeros
+        for population in range(self.json_config["nb_population"]):
+            lst = [1] * self.json_config["max_features"] + [0] * (self.train_features.shape[1] -
+                                                                  self.json_config["max_features"])
+            self.rng.shuffle(lst)
+            self.current_population.append(lst)
+
+        logging.info(f"Initialized population with {self.json_config['nb_population']} individuals and "
+                     f"{self.json_config['max_features']} number of features in each")
+
+
     def optimize(self) -> None:
-        ...
+        """
+        Main method to use the genetic class. Will initialize the population, and then loop over the main components,
+        i.e. population evaluation, selection, crossover and mutation, for a total of nb_generation iterations
+
+        Returns:
+            None
+        """
+        # Start with population initialization
+        self.initialize_population()
+
+        # Main loop
+        for generation in range(self.json_config["nb_generation"]):
+            logging.info(f"Generation {generation + 1} / {self.json_config['nb_generation']}")
+            ...
