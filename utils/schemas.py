@@ -8,6 +8,8 @@
 #
 ###############################################################################
 from pydantic import BaseModel, ConfigDict, Field, PositiveInt
+from typing import Literal
+from utils.defines import FEATURES_COMPUTATION_TYPES
 
 
 class InputConfig(BaseModel):
@@ -32,9 +34,18 @@ class InputConfig(BaseModel):
         lt=1,
         default=0.8
     )
-    max_features: PositiveInt = Field(
-        description="Maximum number of features to use in ML models",
-        default=20
+    features_fraction: float = Field(
+        description="Represents the desired feature fraction to use among all the features within the dataset - either "
+                    "computed by row (nb_population) or column (nb_features), according to what is set in the "
+                    "'features_computation' parameter",
+        gt=0,
+        lt=1,
+        default=0.8
+    )
+    features_computation: Literal[FEATURES_COMPUTATION_TYPES] = Field(
+        description="Represents how the initial population will be initialized - by setting random ones per row "
+                    "('rows', i.e. by individual), or per column ('columns', i.e. by feature)",
+        default="columns",
     )
     random_seed: int = Field(
         description="Seed for reproducibility",

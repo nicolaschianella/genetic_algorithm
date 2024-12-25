@@ -13,3 +13,6 @@ TARGET_ENCODER = {
     "B": 0,
     "M": 1
 }
+
+# To create initial population
+FEATURES_COMPUTATION_TYPES = ["rows", "columns"]

@@ -10,6 +10,7 @@
 import json
 import logging
 import pandas as pd
+import numpy as np
 import random
 
 from utils.defines import TARGET_ENCODER
@@ -58,6 +59,7 @@ class Genetic:
 
         # Seed
         self.rng = random.Random(self.json_config["random_seed"])
+        np.random.seed(self.json_config["random_seed"])
 
         # Split train/validation
         self.split_train_val()
@@ -182,23 +184,34 @@ class Genetic:
         Returns:
             None
         """
-        # Initial check
-        if self.json_config["max_features"] > self.train_features.shape[1]:
-            msg = (f"Provided 'max_features': {self.json_config['max_features']} exceeds total number of features "
-                   f"within the dataset: {self.train_features.shape[1]}, cannot proceed further")
-            logging.error(msg)
-            raise Exception(msg)
+        # Initialize matrix with nb_population rows and nb_features columns
+        population = np.zeros((self.json_config["nb_population"], self.train_features.shape[1]), dtype=int)
 
-        # Loop over nb_population, and each individual will randomly get max_features ones and
-        # (total_number_of_features - max_features) zeros
-        for population in range(self.json_config["nb_population"]):
-            lst = [1] * self.json_config["max_features"] + [0] * (self.train_features.shape[1] -
-                                                                  self.json_config["max_features"])
-            self.rng.shuffle(lst)
-            self.current_population.append(lst)
+        logging.info(f"Using {self.json_config['features_computation']} mode for initial population creation")
 
-        logging.info(f"Initialized population with {self.json_config['nb_population']} individuals and "
-                     f"{self.json_config['max_features']} number of features in each")
+        if self.json_config["features_computation"] == "rows":
+            # Compute number of features per individual to use
+            nb_features = int(self.json_config["features_fraction"] * self.train_features.shape[1])
+            logging.info(f"Initializing population with {nb_features} features per individual")
+
+            # Set nb_features ones in each row
+            for i in range(self.json_config["nb_population"]):
+                ones_indices = np.random.choice(self.train_features.shape[1], nb_features, replace=False)
+                population[i, ones_indices] = 1
+
+        if self.json_config["features_computation"] == "columns":
+            nb_ones = int(self.json_config["features_fraction"] * self.json_config["nb_population"])
+            logging.info(f"Initializing population with each feature appearing {nb_ones} times along all the "
+                         f"individuals")
+
+            # Set nb_ones ones in each column
+            for j in range(self.train_features.shape[1]):
+                ones_indices = np.random.choice(self.json_config["nb_population"], nb_ones, replace=False)
+                population[ones_indices, j] = 1
+
+        logging.info("Finished population initialization")
+
+        self.current_population = population
 
 
     def optimize(self) -> None:
