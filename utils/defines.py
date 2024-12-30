@@ -16,3 +16,6 @@ TARGET_ENCODER = {
 
 # To create initial population
 FEATURES_COMPUTATION_TYPES = ["rows", "columns"]
+
+# For ML models definition
+MODELS_TYPES = ["ET"]

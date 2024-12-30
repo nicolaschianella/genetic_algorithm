@@ -9,7 +9,7 @@
 ###############################################################################
 from pydantic import BaseModel, ConfigDict, Field, PositiveInt
 from typing import Literal
-from utils.defines import FEATURES_COMPUTATION_TYPES
+from utils.defines import FEATURES_COMPUTATION_TYPES, MODELS_TYPES
 
 
 class InputConfig(BaseModel):
@@ -24,7 +24,7 @@ class InputConfig(BaseModel):
         default=10
     )
     nb_population: PositiveInt = Field(
-        description="Number of population to run the genetic algorithm",
+        description="Number of populations to run the genetic algorithm",
         default=50
     )
     train_fraction: float = Field(
@@ -54,6 +54,11 @@ class InputConfig(BaseModel):
         description="Represents how the initial population will be initialized - by setting random ones per row "
                     "('rows', i.e. by individual), or per column ('columns', i.e. by feature)",
         default="columns",
+    )
+    ml_model: Literal[MODELS_TYPES] = Field(
+        description="Define which type of ML model is used for model definition - available ones are 'ET' (sklearn "
+                    "ExtraTreesClassifier)",
+        default="ET"
     )
     random_seed: int = Field(
         description="Seed for reproducibility",

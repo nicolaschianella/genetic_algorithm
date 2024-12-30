@@ -16,6 +16,8 @@ import random
 from utils.defines import TARGET_ENCODER
 from utils.schemas import InputConfig
 
+from sklearn.ensemble import ExtraTreesClassifier
+
 
 class Genetic:
     """
@@ -225,6 +227,62 @@ class Genetic:
         self.current_population = population
 
 
+    def log_infos(self) -> None:
+        """
+        Small utils method to log information before the optimizing processing begins
+
+        Returns:
+            None
+        """
+        logging.info(f"Number of generations: {self.json_config['nb_generation']}")
+        logging.info(f"Number of populations within each generation: {self.json_config['nb_population']}")
+        logging.info(f"Performing evaluation using '{self.json_config['ml_model']}' ML model type")
+
+
+    def fit(self,
+            train_features: pd.DataFrame) -> ExtraTreesClassifier:
+        """
+        Fits an ExtraTree model with the provided training data and self.train_target, and returns the fitted model
+
+        Args:
+            train_features (pd.DataFrame): features to use to fit the model. This has to be a pre-filtered DataFrame
+
+        Returns:
+            ExtraTreesClassifier, fitted model using provided training features
+        """
+        if self.json_config["ml_model"] == "ET":
+            model = ExtraTreesClassifier(random_state=self.json_config["random_seed"])
+            model.fit(train_features, self.train_target)
+
+            return model
+
+
+    def evaluate(self,
+                 generation_nb: int) -> None:
+        """
+        Method used to evaluate the current population. Will evaluate all the individuals within the population, by
+        fitting an ML model (ET) with only the considered features for each individual, and evaluating the model on the
+        validation set
+
+        Args:
+            generation_nb (int): Generation number in use
+
+        Returns:
+            None
+        """
+        # Loop over all the individuals
+        for index, individual in enumerate(self.current_population):
+            logging.info(f"Generation {generation_nb} / {self.json_config['nb_generation']}, evaluating individual {index + 1} / {len(self.current_population)}")
+            # Apply selected features to train/validation/test sets
+            selected_columns = self.train_features.columns[np.bool(individual)]  # Train/validation/test sets have the
+                                                                                 # same columns names
+            train_features, val_features, test_features = (self.train_features[selected_columns],
+                                                           self.val_features[selected_columns],
+                                                           self.test_features[selected_columns])
+            # Fit training data
+            individual_model = self.fit(train_features=train_features)
+
+
     def optimize(self) -> None:
         """
         Main method to use the genetic class. Will initialize the population, and then loop over the main components,
@@ -236,7 +294,12 @@ class Genetic:
         # Start with population initialization
         self.initialize_population()
 
+        # Logs
+        self.log_infos()
+
         # Main loop
-        for generation in range(self.json_config["nb_generation"]):
-            logging.info(f"Generation {generation + 1} / {self.json_config['nb_generation']}")
-            ...
+        for generation in range(1, self.json_config["nb_generation"] + 1):
+            logging.info(f"Generation {generation} / {self.json_config['nb_generation']}")
+
+            # Proceed to evaluate current population
+            self.evaluate(generation_nb=generation)
