@@ -43,9 +43,9 @@ class Genetic:
         self.features = None
         # Target within the dataset
         self.target = None
-        # Train/validation datasets and associated targets
-        self.train_features, self.val_features = None, None
-        self.train_target, self.val_target = None, None
+        # Train/validation/test datasets and associated targets
+        self.train_features, self.val_features, self.test_features = None, None, None
+        self.train_target, self.val_target, self.test_target = None, None, None
         # Population binary indicators
         self.current_population = []
 
@@ -62,7 +62,7 @@ class Genetic:
         np.random.seed(self.json_config["random_seed"])
 
         # Split train/validation
-        self.split_train_val()
+        self.split_train_val_test()
 
 
     def load_json(self,
@@ -150,29 +150,40 @@ class Genetic:
             raise Exception(msg)
 
 
-    def split_train_val(self) -> None:
+    def split_train_val_test(self) -> None:
         """
-        Splits randomly the whole dataset in training and validation sets, according to 'train_fraction' specified in
-        the config. Please note that it's taken fully randomly (meaning for time series data, it will introduce leak)
+        Splits randomly the whole dataset in training, validation and test sets, according to 'train_fraction' and
+        'val_fraction' specified in the config. Please note that it's taken fully randomly (meaning for time series
+        data, it will introduce leak)
 
         Returns:
             None
         """
         try:
-            # Calculate number of train samples and generate train indexes and complementary validation indexes
+            # Calculate number of train samples and generate train indexes and complementary validation/test indexes
             nb_train_samples = int(self.features.shape[0] * self.json_config["train_fraction"])
             train_indexes = self.rng.sample(range(self.features.shape[0]), nb_train_samples)
-            val_indexes = [i for i in range(self.features.shape[0]) if i not in train_indexes]
+            val_test_indexes = [i for i in range(self.features.shape[0]) if i not in train_indexes]
+
+            # Repeat the process for validation and test indexes
+            nb_val_samples = int((self.features.shape[0] - nb_train_samples) * self.json_config["val_fraction"])
+            val_indexes = self.rng.sample(val_test_indexes, nb_val_samples)
+            test_indexes = [i for i in range(self.features.shape[0]) if i not in train_indexes and i not in val_indexes]
 
             # Assign values for features and target
-            self.train_features, self.val_features = self.features.iloc[train_indexes], self.features.iloc[val_indexes]
-            self.train_target, self.val_target = self.target.iloc[train_indexes], self.target.iloc[val_indexes]
+            self.train_features, self.val_features, self.test_features = (self.features.iloc[train_indexes],
+                                                                          self.features.iloc[val_indexes],
+                                                                          self.features.iloc[test_indexes])
+            self.train_target, self.val_target, self.test_target = (self.target.iloc[train_indexes],
+                                                                    self.target.iloc[val_indexes],
+                                                                    self.target.iloc[test_indexes])
 
             logging.info(f"Dataset split in {self.train_features.shape[0]} training samples, "
-                         f"{self.val_features.shape[0]} validation samples")
+                         f"{self.val_features.shape[0]} validation samples, and {self.test_features.shape[0]} test "
+                         f"samples")
 
         except Exception as e:
-            msg = f"An Exception occurred while splitting data in train/validation set - full exception: {e}"
+            msg = f"An Exception occurred while splitting data in train/validation/test set - full exception: {e}"
             logging.error(msg)
             raise Exception(msg)
 

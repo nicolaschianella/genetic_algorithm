@@ -32,7 +32,15 @@ class InputConfig(BaseModel):
                     "excluded)",
         gt=0,
         lt=1,
-        default=0.8
+        default=0.7
+    )
+    val_fraction: float = Field(
+        description="Represents the desired validation fraction to use for ML models, once the train fraction is "
+                    "applied. Can be considered as the genetic 'training' set. The rest of the dataset will go for the "
+                    "genetic test set - must be within 0 and 1 (both excluded)",
+        gt=0,
+        lt=1,
+        default=0.7
     )
     features_fraction: float = Field(
         description="Represents the desired feature fraction to use among all the features within the dataset - either "
