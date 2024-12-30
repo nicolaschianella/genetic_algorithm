@@ -19,3 +19,6 @@ FEATURES_COMPUTATION_TYPES = ["rows", "columns"]
 
 # For ML models definition
 MODELS_TYPES = ["ET"]
+
+# For ML models evaluation
+EVAL_METRICS = ["F1"]

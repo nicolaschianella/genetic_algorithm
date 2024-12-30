@@ -17,6 +17,7 @@ from utils.defines import TARGET_ENCODER
 from utils.schemas import InputConfig
 
 from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.metrics import f1_score
 
 
 class Genetic:
@@ -281,6 +282,14 @@ class Genetic:
                                                            self.test_features[selected_columns])
             # Fit training data
             individual_model = self.fit(train_features=train_features)
+            # Predict validation and test data
+            predicted_val, predicted_test = (individual_model.predict(val_features),
+                                             individual_model.predict(test_features))
+            # Evaluate and store results in class attributes
+            if self.json_config["eval_metric"] == "F1":
+                f1_score_val, f1_score_test = (f1_score(list(self.val_target), predicted_val),
+                                               f1_score(list(self.test_target), predicted_test))
+                logging.info(f"F1 score val: {f1_score_val}, F1 score test: {f1_score_test}")
 
 
     def optimize(self) -> None:
